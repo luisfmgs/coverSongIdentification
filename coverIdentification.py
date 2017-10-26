@@ -1,54 +1,81 @@
 from librosa import load as loadSong
-from librosa.feature import mfcc as getMfccs
-from librosa.beat import beat_track
 from json import load as jsonLoad
-from numpy import concatenate
-from scipy.spatial.distance import euclidean
-sampleRate = 44100
+from preprocessing import preprocess
+from feature_extraction import extract_features
+from compare import compare
 
-songsInfoPath = '/home/luisfmgs/Documents/tcc/songsinfo.json'
-with open(songsInfoPath) as data:
-    songsInfo = jsonLoad(data)
+originalInfoPath = '/home/luisfmgs/Documents/tcc/original.json'
+vocalCoverInfoPath = '/home/luisfmgs/Documents/tcc/vocal.json'
+instrumentalCoverInfoPath = '/home/luisfmgs/Documents/tcc/instrumental.json'
 
-originalFeatures = []
-vocalFeatures = []
-instrumentalFeatures = []
+with open(originalInfoPath) as data:
+    originalInfo = jsonLoad(data)
 
-for song in songsInfo:
-    originalWaveForm, sr = loadSong(song['originalPath'], sampleRate)
-    vocalCoverWaveForm, sr = loadSong(song['vocalCoverPath'], sampleRate)
-    instrumentalCoverWaveForm, sr = loadSong(song['instrumentalCoverPath'], sampleRate)
+with open(vocalCoverInfoPath) as data:
+    vocalInfo = jsonLoad(data)
 
-    originalMfccs = getMfccs(originalWaveForm, sampleRate, None, 13)
-    vocalMfccs = getMfccs(vocalCoverWaveForm, sampleRate, None, 13)
-    instrumentalMfccs = getMfccs(instrumentalCoverWaveForm, sampleRate, None, 13)
+with open(instrumentalCoverInfoPath) as data:
+    instrumentalInfo = jsonLoad(data)
 
-    originalFeatures.append(
-        {
-            'id': song['id'],
-            'features': concatenate([originalMfccs.mean(axis=1), originalMfccs.var(axis=1)])
-        }
-    )
-    vocalFeatures.append(
-        {
-            'id': song['id'],
-            'features': concatenate([vocalMfccs.mean(axis=1), vocalMfccs.var(axis=1)])
-        }
-    )
-    instrumentalFeatures.append(
-        {
-            'id': song['id'],
-            'features': concatenate([instrumentalMfccs.mean(axis=1), instrumentalMfccs.var(axis=1)])
-        }
-    )
+original_features = []
+for inforiginal in originalInfo:
+    original, sr_original = loadSong(path=inforiginal['path'], sr=None)
 
-for vocalCover in vocalFeatures:
-    minDiff = float('inf')
-    minId = None
-    for original in originalFeatures:
-        if euclidean(original['features'], vocalCover['features']) < minDiff:
-            minDiff = euclidean(original['features'], vocalCover['features'])
-            minId = original['id']
+    original = preprocess(original)
 
-    print 'para cover id ', vocalCover['id']
-    print 'eu achei que fosse ', minId
+    original_features.append(extract_features(original, sr_original))
+
+print('vocal cover')
+vocalhits = 0
+
+for infocover in vocalInfo:
+    vocalCover, sr_vocalCover = loadSong(path=infocover['path'], sr=None)
+    minscore = 0
+    originalID = 0
+
+    vocalCover = preprocess(vocalCover)
+    cover_features = extract_features(vocalCover, sr_vocalCover)
+
+    for idx, original in enumerate(original_features):
+        score = compare(original, cover_features)
+
+        if (score > minscore):
+            minscore = score
+            originalID = idx+1
+        elif (score == minscore):
+            print('eita empatou ):')
+
+    if (originalID == infocover['id']):
+        print("acertou!")
+        vocalhits += 1
+    else:
+        print('errou')
+
+print('hits', vocalhits/25.)
+print('instrumental cover')
+instrumentalhits = 0
+
+for infoinstrumental in instrumentalInfo:
+    instrumentalCover, sr_instrumentalCover = loadSong(path=infoinstrumental['path'], sr=None)
+    minscore = 0
+    originalID = 0
+
+    instrumentalCover = preprocess(instrumentalCover)
+    cover_features = extract_features(instrumentalCover, sr_instrumentalCover)
+
+    for idx, original in enumerate(original_features):
+        score = compare(original, cover_features)
+
+        if (score > minscore):
+            minscore = score
+            originalID = idx+1
+        elif (score == minscore):
+            print('eita empatou ):')
+
+    if (originalID == infoinstrumental['id']):
+        print("acertou!")
+        instrumentalhits += 1
+    else:
+        print('errou')
+
+print('hits', instrumentalhits/25.)
