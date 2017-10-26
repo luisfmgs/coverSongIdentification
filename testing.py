@@ -28,4 +28,3 @@ cover_features = extract_features(vocalCover, sr_vocalCover)
 
 
 x = compare(original_features, cover_features)
-plt.matshow(x)
