@@ -1,6 +1,5 @@
 from librosa import load as loadSong
 from json import load as jsonLoad
-from preprocessing import preprocess
 from feature_extraction import extract_features
 from compare import compare
 
@@ -21,8 +20,6 @@ original_features = []
 for inforiginal in originalInfo:
     original, sr_original = loadSong(path=inforiginal['path'], sr=None)
 
-    original = preprocess(original)
-
     original_features.append(extract_features(original, sr_original))
 
 print('vocal cover')
@@ -33,7 +30,6 @@ for infocover in vocalInfo:
     minscore = 0
     originalID = 0
 
-    vocalCover = preprocess(vocalCover)
     cover_features = extract_features(vocalCover, sr_vocalCover)
 
     for idx, original in enumerate(original_features):
@@ -60,7 +56,6 @@ for infoinstrumental in instrumentalInfo:
     minscore = 0
     originalID = 0
 
-    instrumentalCover = preprocess(instrumentalCover)
     cover_features = extract_features(instrumentalCover, sr_instrumentalCover)
 
     for idx, original in enumerate(original_features):
@@ -70,7 +65,7 @@ for infoinstrumental in instrumentalInfo:
             minscore = score
             originalID = idx+1
         elif (score == minscore):
-            print('eita empatou ):')
+            print('empate entre', idx+1, originalID)
 
     if (originalID == infoinstrumental['id']):
         print("acertou!")

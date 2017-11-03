@@ -40,6 +40,8 @@ def binary_cs(X):
 
     n = X.shape[0]
     m = X.shape[1]
+    knn = max(n,m)/10
+    # knn = 20
 
     bcs = zeros(X.shape)
 
@@ -51,7 +53,7 @@ def binary_cs(X):
             line.sort()
             copyto(column, X[:, j])
             column.sort()
-            if (X[i,j] < line[20] and X[i,j] < column[20]):
+            if (X[i,j] < line[knn] and X[i,j] < column[knn]):
                 bcs[i,j] = 1
 
     return bcs
